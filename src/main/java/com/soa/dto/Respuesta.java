@@ -13,6 +13,8 @@ public class Respuesta {
 
     private Boolean status;
     
+    
+    
     public Respuesta(String message, Boolean status) {
         super();
         this.message = message;
@@ -49,8 +51,5 @@ public class Respuesta {
     public void setStatus(Boolean status) {
         this.status = status;
     }
-
-   
-
    
 }

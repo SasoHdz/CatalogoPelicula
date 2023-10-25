@@ -9,37 +9,46 @@ import org.springframework.jms.annotation.JmsListener;
 import org.springframework.stereotype.Component;
 
 import com.google.gson.Gson;
-import com.soa.business.BancoBusiness;
-import com.soa.dto.CargoTarjeta;
+import com.soa.business.CatalogoBusiness;
+import com.soa.dto.DatosRenta;
 import com.soa.dto.Respuesta;
+import com.soa.dto.Titulo;
 
 /**
  * Class for receiving messages in an artemis queue.
  */
 @Component
-public class ArtemisListenerCargo {
+public class ArtemisListenerCheckCatalogo {
+    
     @Autowired
-    private BancoBusiness business;
+    private CatalogoBusiness business;
 
     @Autowired
     private JmsSender sender;
 
     /** Nombre de la cola de respuesta del microservicio. */
-    @Value("${cargo.queue.name.out}")
+    @Value("${tarjeta.queue.name.in}")
     private String outQueueName;
 
-    @JmsListener(destination = "${cargo.queue.name.in}")
+    @JmsListener(destination = "${catalogo.queue.name.in}")
     public void receive(String message) {
         System.out.println(String.format("Received message: %s",
                 message));
         Gson gson = new Gson();
-        CargoTarjeta cargo = gson.fromJson(message, CargoTarjeta.class);
-        Respuesta respuesta = business.cargo(cargo);
-        System.out.println("Resultado de consulta: "+respuesta);
+        DatosRenta data = gson.fromJson(message, DatosRenta.class);
+        Float costo = business.checkData(data.getTitulo(),data.getTiempo());
+        if(costo<0) {
+            data.setStatus(false);
+        }
+        else {
+            data.setStatus(true);
+            data.setCostoRenta(costo);
+        }
+        System.out.println("Resultado de consulta: "+costo);
         try {
-            sender.sendMessage(respuesta.toString(), outQueueName);
+            sender.sendMessage(data.toString(), outQueueName); //Pasa mensaje a siguiente cola
             System.out.println(String.format("Mensaje enviado: %s", 
-                    respuesta.toString()));
+                    data.toString()));
         } catch(Exception e) {
             e.printStackTrace();
         }
